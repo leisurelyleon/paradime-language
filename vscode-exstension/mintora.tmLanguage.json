@@ -1,0 +1,36 @@
+{
+    "scopeName": "source.mintora",
+    "name": "Mintora",
+    "patterns": [
+        {
+            "name": "comment.line.double-slash.mintora",
+            "match": "//.*$"
+        },
+        {
+            "name": "comment.block.mintora",
+            "begin": "/\\*",
+            "end": "\\*/"
+        },
+        {
+            "name": "string.quoted.double.mintora",
+            "begin": "\"",
+            "end": "\""
+        },
+        {
+            "name": "string.quoted.single.mintora",
+            "begin": "'",
+            "end": "'"
+        },
+        {
+            "name": "keyword.control.mintora",
+            "match": "\\b(contract|fn|let|if|else|return)\\b"
+        },
+        {
+            "name": "constant.numeric.mintora",
+            "match": "\\b\\d+(?:\\.\\d+)?\\b"
+        }
+    ],
+    "repository": {},
+    "foldingStartMaker": "\\{",
+    "foldingStopMarker": "\\}"
+}

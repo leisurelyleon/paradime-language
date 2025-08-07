@@ -1,0 +1,7 @@
+# Rust/Cargo
+/target/
+**/*.rs.bk
+**/*.log
+
+# VS Code
+.vscode/

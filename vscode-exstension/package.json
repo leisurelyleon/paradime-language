@@ -1,0 +1,30 @@
+{
+    "name": "mintora",
+    "displayName": "Mintora",
+    "description": "Syntax highlighting & icon support for the Mintora smart-contract language",
+    "version": "0.0.1",
+    "publisher": "leisurelyleon",
+    "engines": { "vscode": "1.50.0" },
+    "categories": ["Languages"],
+    "contributes": {
+        "languages": [
+            {
+                "id": "mintora",
+                "aliases": ["Mintora", "mintora"],
+                "extensions": [".mint"],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "mintora",
+                "scopeName": "source.mintora",
+                "path": ".mintora.tmLanguage.json"
+            }
+        ],
+        "iconThemes": [],
+        "fileIcon": {
+            ".mint": "./icon.png"
+        }
+    }
+}
