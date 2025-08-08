@@ -1,3 +1,4 @@
+/// Abstract Syntax Tree for Mintora
 #[derive(Debug)]
 pub enum Expr {
     Number(f64),
@@ -21,3 +22,4 @@ pub enum Statement {
 pub struct Program {
     pub statements: Vec<Statement>,
 }
+
