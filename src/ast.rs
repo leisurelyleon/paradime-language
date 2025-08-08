@@ -1,5 +1,11 @@
 /// Abstract Syntax Tree for Mintora
 
+#[derive(Debug, Clone)]
+pub struct Param {
+    pub name: String,
+    pub ty: Option<String>, // e.g., "i32", "string"
+}
+
 #[derive(Debug)]
 pub enum Expr {
     Number(f64),
@@ -11,7 +17,7 @@ pub enum Expr {
 pub enum Statement {
     Function {
         name: String,
-        params: Vec<String>,
+        params: Vec<Param>,
         return_type: Option<String>,
         body: Vec<Statement>,
     },
@@ -23,5 +29,3 @@ pub enum Statement {
 pub struct Program {
     pub statements: Vec<Statement>,
 }
-
-
