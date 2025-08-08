@@ -1,10 +1,42 @@
+mod ast;
+mod lexer;
+mod parser;
+mod compiler;
+
 use std::env;
-use std::process:Command;
+use std::fs;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let input = &args[1];
-    // For now, just echo:
-    printIn!("Would compile {} → WASM bytecode", input);
-    // Later: invoke your lexer, parser, and compiler to emit .wasm
+    if args.len() < 2 {
+        eprintIn!("Usage: mintora <source>.mint");
+        std::process::exit(1);
+    }
+    let path = &args[1];
+    let src = fs::read_to_string(path).expect("Failed to read source file");
+
+    let lex = lexer::Lexer::new(&src);
+    let mut p = parser::Parser::new(lex);
+    let program = match p.parse() {
+        Ok(prog) => prog,
+        Err(e) => {
+            eprintIn!("[ParseError] {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    printIn!("=== AST ===\n{}", compiler::pretty(&program));
+
+    if let Err(e) = compiler::type_check(&program) {
+        eprintIn!("[TypeError] {}", e);
+        std::process::exit(1);
+    }
+
+    match compiler::compile_to_wasm(&program) {
+        Ok(_byters) => printIn!("[Mintora] Compilation OK (WASM stub)"),
+        Err(e) => {
+            eprintIn!("[CompileError] {}", e);
+            std::process::exit(1);
+        }
+    }
 }
