@@ -11,7 +11,11 @@ pub enum Expr {
     Number(f64),
     StringLiteral(String),
     Ident(String),
+    Binary { op: BinOp, left: Box<Expr>, right: Box<Expr> },
 }
+
+#[derive(Debug, Clone, Copy)]
+pub enum BinOp { Add }
 
 #[derive(Debug)]
 pub enum Statement {
