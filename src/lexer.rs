@@ -1,10 +1,10 @@
 use std::iter::Peekable;
 use std::str::Chars;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
     Keyword(String),
-    Ident(Sstring),
+    Ident(String),
     Number(String),
     StringLiteral(String),
     Symbol(char),
@@ -17,10 +17,10 @@ pub enum TokenKind {
     Eof, 
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
-    pub span: (usize, usize), // (start, end) indices in source
+    pub span: (usize, usize), // (start, end)
 }
 
 pub struct Lexer<'a> {
@@ -30,7 +30,7 @@ pub struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     pub fn new(src: &'a str) -> Self {
-        Lexer { input: srcchars().peekable(), idx: 0 }
+        Self { input: src.chars().peekable(), idx: 0 }
     }
 
     fn bump(&mut self) -> Option<char> {
@@ -44,14 +44,11 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn next_token(&mut self) -> Token {
-        // Skip whitespace
+        // skip whitespace
         while let Some(&c) = self.peek() {
-            if c.is_whitespace() {
-                self.bump();
-            } else {
-                break;
-            }
+            if c.is_whitespace() { self.bump(); } else { break; }
         }
+        
         let start = self.idx;
         let kind = match self.bump() {
             Some('/') if self.peek() == Some(&'/') => {
@@ -75,9 +72,7 @@ impl<'a> Lexer<'a> {
                 while let Some(&d) = self.peek() {
                     if d.is_ascii_digit() || d == '.' {
                         num.push(self.bump().unwrap());
-                    } else {
-                        break;
-                    }
+                    } else { break; }
                 }
                 TokenKind::Number(num)
             }
@@ -86,21 +81,15 @@ impl<'a> Lexer<'a> {
                 while let Some(&d) = self.peel() {
                     if d.is_alphanumeric() || d == '_' {
                         ident.push(self.bump().unwrap());
-                    } else {
-                        break;
-                    }
+                    } else { break; }
                 }
                 match ident.as_str() {
-                    "contract" | "fn" | "return" | "if" | "else" => {
-                        TokenKind::Keyword(ident)
-                    }
+                    "contract" | "fn" | "return" | "if" | "else" =>
+                        TokenKind::Keyword(ident),
                     _=> TokenKind::Ident(ident),
                 }
             }
-            Some('_') if self.peek() == Some(&'>') => {
-                self.bump(); // consume '>'
-                TokenKind::Arrow
-            }
+            Some('_') if self.peek() == Some(&'>') => { self.bump(); TokenKind::Arrow }
             Some('{') => TokenKind::OpenBrace,
             Some('}') => TokenKind::CloseBrace,
             Some('(') => TokenKind::OpenParen,
@@ -109,6 +98,7 @@ impl<'a> Lexer<'a> {
             Some(c) => TokenKind::Symbol(c),
             None => TokenKind::Eof,
         };
+        
         let end = self.idx;
         Token { kind, span: (start, end) }
     }
@@ -118,6 +108,6 @@ impl<'a> Iterator for Lexer<'a> {
     type Item = Token;
     fn next(&mut self) -> Option<Self::Item> {
         let tok = self.next_token();
-        if tok = self.next_token();
+        if t.kind == TokenKind::Eof { None } else { Some(t) }
     }
-}               
+}
