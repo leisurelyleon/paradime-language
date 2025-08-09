@@ -40,6 +40,16 @@ fn infer_expr_type(expr: &Expr, env: &HashMap<String, Type>) -> Type {
         }
         Expr::StringLiteral(_) => Type::String,
         Expr::Ident(name) => env.get(name).cloned().unwrap_or(Type::Unknown),
+        Expr::Binary { op, left, right } => {
+            // for now we only model integer add
+            let lt = infer_expr_type(left, env);
+            let rt = infer_expr_type(right, env);
+            match op {
+                BinOp::Add => {
+                    if lt == Type::I32 && rt == Type::I32 { Type::I32 } else { Type::Unknown }
+                }
+            }
+        }
     }
 }
 
@@ -254,3 +264,4 @@ pub fn compile_to_wasm(program: &Program) -> Result<Vec<u8>, String> {
 
     Ok(out)
 }
+
