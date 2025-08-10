@@ -155,18 +155,43 @@ fn section(id: u8, content: Vec<u8>, out: &mut Vec<u8>) {
     out.extend_from_slice(&content);
 }
 
+fn emit_expr_i32(e: &Expr, param_names: &[String], body: &mut Vec<u8>) -> Result<(), String> {
+    match e {
+        Expr::Number(n) if n.fract() == 0.0 && *n >= 0.0 => {
+            body.push(0x41); // i32.const
+            write_uleb(*n as u32, body);
+            Ok(())
+        }
+        Expr::Ident(id) => {
+            if let Some(idx) = param_names.iter().position(|p| p == id) {
+                body.push(0x20); // local.get
+                write_uleb(idx as u32, body);
+                Ok(())
+            } else {
+                Err(format!("Unknown identifier `{}`", id))
+            }
+        }
+        Expr::Binary { op: BinOp::Add, left, right } => {
+            emit_expr_i32(left, param_names, body)?;
+            emit_expr_i32(right, param_names, body)?;
+            body.push(0x6A); // i32.add
+            Ok(())
+        }
+        _ => Err("Unsupported expression in codegen".into()),
+    }
+}
+            
 /// Compile a single exported function where:
 ///   - return type is `i32`
 ///   - params are all `i32` (or unspecified; treated as i32 for now)
 ///   - body is exactly `return <paramIdent>` or `return <int literal>`
 /// Exports the function under its Mintora name.
 pub fn compile_to_wasm(program: &Program) -> Result<Vec<u8>, String> {
-    enum RetSrc { Const(i32), Param(usize) }
+    // We'll compile the first function that returns an i32 with a single `return <expr>;`
 
     let mut export_name: Option<String> = None;
-    let mut param_count: usize = 0;
     let mut param_names: Vec<String> = Vec::new();
-    let mut ret_src: Option<RetSrc> = None;
+    let mut ret_expr: Option<Expr> = None;
 
     'search: for stmt in &program.statements {
         if let Statement::Function { name, params, return_type, body } = stmt {
@@ -179,33 +204,23 @@ pub fn compile_to_wasm(program: &Program) -> Result<Vec<u8>, String> {
             );
             if !all_i32 { continue; }
 
-            // Determine return source
-            let src = match &body[0] {
-                Statement::Return(Expr::Ident(id)) => {
-                    if let Some(idx) = params.iter().position(|p| p.name == *id) {
-                        RetSrc::Param(idx)
-                    } else {
-                        continue;
-                    }
-                }
-                Statement::Return(Expr::Number(n)) if n.fract() == 0.0 => {
-                    if *n >= 0.0 { RetSrc::Const(*n as i32) } else { continue }
-                }
-                _ => continue,
-            };
-
-            export_name = Some(name.clone());
-            param_count = params.len();
-            param_names = params.iter().map(|p| p.name.clone()).collect();
-            ret_src = Some(src);
+            // Grab the return expression (clone into our owned AST)
+            if let Statement::Return(expr) = &body[0] {
+                export_name = Some(name.clone());
+                param_names = params.iter().map(|p| p.name.clone()).collect();
+                ret_expr = Some(expr.clone());
+            } else {
+                continue;
+            }
             break 'search;
         }
     }
 
     let export = export_name.ok_or_else(|| {
-        "No suitable function found. Expected e.g. `fn <name>(x: i32, ...) -> i32 { return x; }`".to_string()
+        "No suitable function found. Expected e.g. `fn <name>(a: i32, b: i32) -> i32 { return a + b; }`".to_string()
     })?;
     let ret_src = ret_src.unwrap();
+    let param_count = param_names.len();
 
     // ========= Emit WASM =========
     let mut out = Vec::new();
@@ -243,17 +258,7 @@ pub fn compile_to_wasm(program: &Program) -> Result<Vec<u8>, String> {
     let mut body = Vec::new();
     body.push(0x00);              // local decls = 0
 
-    match ret_src {
-        RetSrc::Const(v) => {
-            body.push(0x41);              // i32.const
-            write_uleb(v as u32, &mut body);
-        }
-        RetSrc::Param(idx) => {
-            // WASM uses local indices 0..N-1 for function params
-            body.push(0x20);              // local.get
-            write_uleb(idx as u32, &mut body);
-        }
-    }
+    emit_expr_i32(&ret_expr, &param_bames, &mut body)?;
     body.push(0x0B);              // end
 
     let mut code = Vec::new();
@@ -264,4 +269,5 @@ pub fn compile_to_wasm(program: &Program) -> Result<Vec<u8>, String> {
 
     Ok(out)
 }
+
 
