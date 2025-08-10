@@ -8,20 +8,15 @@ pub enum TokenKind {
     Number(String),
     StringLiteral(String),
     Symbol(char),
-    Arrow,      // '->'
-    OpenBrace,  // '{'
-    CloseBrace, // '}'
-    OpenParen,  // '('
-    CloseParen, // ')'
-    Semicolon,  // ';'
-    Eof, 
+    Arrow,
+    OpenBrace, CloseBrace,
+    OpenParen, CloseParen,
+    Semicolon,
+    Eof,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Token {
-    pub kind: TokenKind,
-    pub span: (usize, usize), // (start, end)
-}
+pub struct Token { pub kind: TokenKind, pub span: (usize, usize) }
 
 pub struct Lexer<'a> {
     input: Peekable<Chars<'a>>,
@@ -39,20 +34,16 @@ impl<'a> Lexer<'a> {
         Some(c)
     }
 
-    fn peek(&mut self) -> Option<&char> {
-        self.input.peek()
-    }
+    fn peek(&mut self) -> Option<&char> { self.input.peek() }
 
     pub fn next_token(&mut self) -> Token {
-        // skip whitespace
         while let Some(&c) = self.peek() {
             if c.is_whitespace() { self.bump(); } else { break; }
         }
-        
         let start = self.idx;
+
         let kind = match self.bump() {
             Some('/') if self.peek() == Some(&'/') => {
-                // line comment
                 while let Some(&c) = self.peek() {
                     if c == '\n' { break; }
                     self.bump();
@@ -70,35 +61,33 @@ impl<'a> Lexer<'a> {
             Some(c) if c.is_ascii_digit() => {
                 let mut num = c.to_string();
                 while let Some(&d) = self.peek() {
-                    if d.is_ascii_digit() || d == '.' {
-                        num.push(self.bump().unwrap());
-                    } else { break; }
+                    if d.is_ascii_digit() || d == '.' { num.push(self.bump().unwrap()); }
+                    else { break; }
                 }
                 TokenKind::Number(num)
             }
             Some(c) if c.is_alphabetic() || c == '_' => {
                 let mut ident = c.to_string();
-                while let Some(&d) = self.peel() {
-                    if d.is_alphanumeric() || d == '_' {
-                        ident.push(self.bump().unwrap());
-                    } else { break; }
+                while let Some(&d) = self.peek() {
+                    if d.is_alphanumeric() || d == '_' { ident.push(self.bump().unwrap()); }
+                    else { break; }
                 }
                 match ident.as_str() {
-                    "contract" | "fn" | "return" | "if" | "else" =>
+                    "contract" | "fn" | "return" | "let" | "if" | "else" =>
                         TokenKind::Keyword(ident),
-                    _=> TokenKind::Ident(ident),
+                    _ => TokenKind::Ident(ident),
                 }
             }
-            Some('_') if self.peek() == Some(&'>') => { self.bump(); TokenKind::Arrow }
+            Some('-') if self.peek() == Some(&'>') => { self.bump(); TokenKind::Arrow }
             Some('{') => TokenKind::OpenBrace,
             Some('}') => TokenKind::CloseBrace,
             Some('(') => TokenKind::OpenParen,
             Some(')') => TokenKind::CloseParen,
             Some(';') => TokenKind::Semicolon,
-            Some(c) => TokenKind::Symbol(c),
-            None => TokenKind::Eof,
+            Some(c)   => TokenKind::Symbol(c),
+            None      => TokenKind::Eof,
         };
-        
+
         let end = self.idx;
         Token { kind, span: (start, end) }
     }
@@ -107,7 +96,7 @@ impl<'a> Lexer<'a> {
 impl<'a> Iterator for Lexer<'a> {
     type Item = Token;
     fn next(&mut self) -> Option<Self::Item> {
-        let tok = self.next_token();
+        let t = self.next_token();
         if t.kind == TokenKind::Eof { None } else { Some(t) }
     }
 }
