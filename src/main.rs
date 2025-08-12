@@ -31,7 +31,7 @@ fn main() {
     }
 
     match compiler::compile_to_wasm(&program) {
-        Ok(_byters) => { fs::write(&out_path, &bytes).expect("Failed to write WASM file"); println!("[Mintora] Wrote {}", out_path); }
+        Ok(bytes) => { fs::write(&out_path, &bytes).expect("Failed to write WASM file"); println!("[Mintora] Wrote {}", out_path); }
         Err(e) => { eprintln!("[CompileError] {}", e); std::process::exit(1); }
     }
 }
